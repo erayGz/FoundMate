@@ -1,0 +1,41 @@
+# JavaScript / frontend
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+
+# .NET / Visual Studio
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Editors and IDEs
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+.idea/
+*.sln.iml
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

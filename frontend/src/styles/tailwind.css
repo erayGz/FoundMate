@@ -1,0 +1,8 @@
+@import "tailwindcss" source(none);
+@source "../**/*.{ts,tsx}";
+
+@theme {
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-sans: "Manrope", Arial, sans-serif;
+  --font-mono: "DM Mono", Consolas, monospace;
+}
