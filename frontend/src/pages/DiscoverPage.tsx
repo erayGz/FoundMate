@@ -3,7 +3,11 @@ import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ProjectCard } from "../components/app/ProjectCard";
 import { filterProjects, type ProjectFilters } from "../data/projectLogic";
-import { availableSkills, projectCategories, projects, type WorkingPreference } from "../data/projects";
+import { availableSkills, projectCategories, projects, type MockProject, type WorkingPreference } from "../data/projects";
+import { useProfile } from "../features/onboarding/ProfileContext";
+import { loadPublishedProject } from "../utils/publishedProjectStorage";
+import { draftToMockProject } from "../utils/projectHelpers";
+import { loadRequiredRoles } from "../utils/requiredRoleStorage";
 import { usePageTitle } from "../utils/usePageTitle";
 
 type PreferenceFilter = "all" | Exclude<WorkingPreference, "flexible">;
@@ -17,7 +21,18 @@ const preferenceOptions: { value: PreferenceFilter; label: string }[] = [
 
 export default function DiscoverPage() {
   usePageTitle("Projeleri keşfet");
+  const { profile } = useProfile();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const publishedDraft = loadPublishedProject();
+  const publishedRoles = publishedDraft ? publishedDraft.roles : [];
+  const myProject: MockProject | null = publishedDraft
+    ? draftToMockProject(publishedDraft, publishedRoles, profile)
+    : null;
+  const allProjects: MockProject[] = myProject
+    ? [myProject, ...projects]
+    : projects;
+
   const query = searchParams.get("q") ?? "";
   const requestedSkill = searchParams.get("role") ?? "Tümü";
   const skill = availableSkills.includes(requestedSkill) ? requestedSkill : "Tümü";
@@ -26,7 +41,7 @@ export default function DiscoverPage() {
   const requestedPreference = searchParams.get("work") ?? "all";
   const workingPreference: PreferenceFilter = ["remote", "hybrid", "local"].includes(requestedPreference) ? requestedPreference as PreferenceFilter : "all";
 
-  const filteredProjects = useMemo(() => filterProjects(projects, { query, skill, category, workingPreference } satisfies ProjectFilters), [category, query, skill, workingPreference]);
+  const filteredProjects = useMemo(() => filterProjects(allProjects, { query, skill, category, workingPreference } satisfies ProjectFilters), [allProjects, category, query, skill, workingPreference]);
 
   const hasActiveFilters = Boolean(query || skill !== "Tümü" || category !== "Tümü" || workingPreference !== "all");
   const setFilter = (key: string, value: string, defaultValue: string) => {
@@ -52,6 +67,12 @@ export default function DiscoverPage() {
     </section>
 
     <div className="mt-7 flex items-center justify-between"><h2 className="text-sm font-semibold text-[#344057]">{filteredProjects.length} proje</h2><p className="text-xs text-[#8a91a0]">Mock veri · Yerel prototip</p></div>
-    {filteredProjects.length ? <section className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{filteredProjects.map((project) => <ProjectCard key={project.name} project={project} />)}</section> : <section className="mt-4 rounded-3xl border border-dashed border-[#d7d5e6] bg-[#fbfaf7] px-5 py-16 text-center"><h2 className="text-lg font-semibold text-[#344057]">Bu filtrelerle eşleşen proje yok.</h2><p className="mt-2 text-sm text-[#758094]">Arama metnini veya seçili filtreleri değiştirmeyi dene.</p><button type="button" onClick={clearFilters} className="mt-5 min-h-10 rounded-xl bg-[#eeecff] px-4 text-sm font-semibold text-[#5148c7]">Filtreleri temizle</button></section>}
+    {filteredProjects.length ? <section className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{filteredProjects.map((project) => {
+      const isOwnProject = project.id === "my-published-project";
+      return <div key={project.name} className="relative">
+        {isOwnProject && <span className="absolute -top-2 left-4 z-10 rounded-full bg-[#5448d8] px-2.5 py-1 text-[10px] font-semibold text-white shadow-[0_2px_8px_rgba(84,72,216,0.3)]">Benim projem</span>}
+        <ProjectCard project={project} />
+      </div>;
+    })}</section> : <section className="mt-4 rounded-3xl border border-dashed border-[#d7d5e6] bg-[#fbfaf7] px-5 py-16 text-center"><h2 className="text-lg font-semibold text-[#344057]">Bu filtrelerle eşleşen proje yok.</h2><p className="mt-2 text-sm text-[#758094]">Arama metnini veya seçili filtreleri değiştirmeyi dene.</p><button type="button" onClick={clearFilters} className="mt-5 min-h-10 rounded-xl bg-[#eeecff] px-4 text-sm font-semibold text-[#5148c7]">Filtreleri temizle</button></section>}
   </div>;
 }

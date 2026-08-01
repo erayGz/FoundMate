@@ -1,0 +1,78 @@
+import type { IncomingApplication, MockApplicant } from "../types/projectDraft";
+
+export const mockApplicants: MockApplicant[] = [
+  {
+    id: "applicant-1",
+    name: "Elif Aydın",
+    initials: "EA",
+    color: "bg-[#e8dff5] text-[#5f3f8a]",
+    skills: ["Frontend", "UI/UX", "Product"],
+    experience: "3 yıl frontend geliştirme, 2 yıl ürün tasarımı. React ve React Native ile projeler geliştirdi.",
+    portfolioUrl: "https://github.com/elifaydin",
+    availability: "Haftada 10–12 saat",
+    bio: "Kullanıcı odaklı ürünler geliştirmeyi seviyorum. Özellikle erken aşama projelerde tasarım ve geliştirme arasındaki köprüyü kurmak benim için en keyifli alan.",
+  },
+  {
+    id: "applicant-2",
+    name: "Mert Kılıç",
+    initials: "MK",
+    color: "bg-[#dff0f5] text-[#2d6f8a]",
+    skills: ["Backend", "DevOps", "Data"],
+    experience: "4 yıl backend geliştirme, Python ve Node.js. Mikroservis mimarisi ve bulut altyapısı deneyimi.",
+    portfolioUrl: "https://github.com/mertkilic",
+    availability: "Haftada 8–10 saat",
+    bio: "Sağlam backend altyapıları kurmak ve sistemleri ölçeklenebilir hale getirmek benim uzmanlık alanım. Açık kaynak projelere katkıda bulunmayı seviyorum.",
+  },
+  {
+    id: "applicant-3",
+    name: "Zeynep Nur Demir",
+    initials: "ZD",
+    color: "bg-[#f5e4d9] text-[#9a5f38]",
+    skills: ["Mobile", "UI/UX", "Growth"],
+    experience: "2 yıl mobil geliştirme (Flutter, React Native). Kullanıcı deneyimi araştırması ve büyüme stratejileri üzerine çalıştı.",
+    portfolioUrl: "https://zeynepdemir.design",
+    availability: "Haftada 6–8 saat",
+    bio: "Mobil uygulamalarda kullanıcı deneyimini iyileştirmek ve büyüme odaklı özellikler geliştirmek benim tutkum. Özellikle erken aşama ürünlerde çalışmayı seviyorum.",
+  },
+  {
+    id: "applicant-4",
+    name: "Can Öztürk",
+    initials: "CÖ",
+    color: "bg-[#e2f0e0] text-[#3f7a3a]",
+    skills: ["AI / ML", "Data", "Backend"],
+    experience: "3 yıl veri bilimi ve makine öğrenmesi. NLP ve tavsiye sistemleri üzerine uzmanlaştı.",
+    portfolioUrl: "https://github.com/canozturk",
+    availability: "Haftada 12–15 saat",
+    bio: "Yapay zeka modellerini gerçek dünya problemlerine uygulamak benim için en heyecan verici şey. Veri odaklı karar verme sistemleri kuruyorum.",
+  },
+];
+
+export const mockIncomingApplications: IncomingApplication[] = [
+  {
+    id: "incoming-1",
+    applicantId: "applicant-1",
+    roleTitle: "Frontend Developer",
+    availability: "Haftada 10–12 saat",
+    skills: ["React", "TypeScript", "Tailwind"],
+    motivation: "Projenizin kullanıcı odaklı yaklaşımı beni çok etkiledi. Özellikle erken aşama bir üründe frontend mimarisini kurmak ve kullanıcı deneyimini şekillendirmek için katkıda bulunmak isterim.",
+    status: "pending",
+  },
+  {
+    id: "incoming-2",
+    applicantId: "applicant-2",
+    roleTitle: "Backend Developer",
+    availability: "Haftada 8–10 saat",
+    skills: ["Python", "PostgreSQL", "Docker"],
+    motivation: "Projenizin çözdüğü problem gerçekten anlamlı. Backend altyapısını kurma ve ölçeklenebilir bir sistem tasarlama konusunda deneyimimi sunmak isterim.",
+    status: "pending",
+  },
+  {
+    id: "incoming-3",
+    applicantId: "applicant-4",
+    roleTitle: "UI/UX Designer",
+    availability: "Haftada 6–8 saat",
+    skills: ["Figma", "Kullanıcı Araştırması", "Prototipleme"],
+    motivation: "Projenizin şu anki prototipini inceledim ve kullanıcı akışlarını iyileştirmek için birçok fikrim var. Özellikle mobil deneyimde bazı iyileştirmeler önerebilirim.",
+    status: "pending",
+  },
+];

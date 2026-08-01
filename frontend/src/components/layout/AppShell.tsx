@@ -7,11 +7,11 @@ import { BrandLogo } from "../ui/BrandLogo";
 const navigation = [
   { to: "/app", label: "Ana Sayfa", icon: Home },
   { to: "/discover", label: "Projeleri Keşfet", icon: Compass },
+  { to: "/my-project", label: "Projem", icon: FolderKanban },
   { to: "/applications", label: "Başvurularım", icon: ClipboardList },
 ];
 
 const upcomingNavigation = [
-  { label: "Projem — Yakında", icon: FolderKanban },
   { label: "Bağlantılar — Yakında", icon: UsersRound },
 ];
 
