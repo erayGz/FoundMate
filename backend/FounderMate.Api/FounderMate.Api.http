@@ -1,0 +1,6 @@
+@FounderMate.Api_HostAddress = http://localhost:5255
+
+GET {{FounderMate.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
