@@ -14,6 +14,7 @@ public static class MappingExtensions
             Name = user.Name,
             Headline = user.Headline,
             CreatedAt = user.CreatedAt,
+            PasswordChangedAt = user.PasswordChangedAt,
         };
     }
 }

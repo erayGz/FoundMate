@@ -22,4 +22,6 @@ public class User
     public string? Headline { get; set; }
 
     public DateTime CreatedAt { get; set; }
+
+    public DateTime? PasswordChangedAt { get; set; }
 }

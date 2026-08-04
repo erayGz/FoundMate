@@ -7,4 +7,5 @@ public class UserResponseDto
     public string Name { get; init; } = string.Empty;
     public string? Headline { get; init; }
     public DateTime CreatedAt { get; init; }
+    public DateTime? PasswordChangedAt { get; set; }
 }

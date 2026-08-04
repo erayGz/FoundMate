@@ -40,6 +40,7 @@ public class UserService : IUserService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Name = request.Name,
             CreatedAt = DateTime.UtcNow,
+            PasswordChangedAt = DateTime.UtcNow,
         };
 
         _context.Users.Add(user);
@@ -158,7 +159,6 @@ public class UserService : IUserService
     public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordRequestDto request)
     {
         var user = await _context.Users.FindAsync(userId);
-
         if (user is null)
         {
             return false;
@@ -171,6 +171,7 @@ public class UserService : IUserService
         }
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.PasswordChangedAt = DateTime.UtcNow;
         _context.Update(user);
         await _context.SaveChangesAsync();
 
@@ -178,8 +179,29 @@ public class UserService : IUserService
         return true;
     }
 
+
     public async Task<bool> IsEmailAvailableAsync(string email)
     {
         return !await _context.Users.AnyAsync(u => u.Email == email);
     }
+
+    public async Task<PromoteResult> PromoteToAdminAsync(string email)
+    {
+        var normalizedEmail = email.Trim().ToLower();
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
+        if (user is null)
+        {
+            return PromoteResult.NotFound;
+        }
+
+        if (user.Role == "Admin")
+        {
+            return PromoteResult.AlreadyAdmin;
+        }
+
+        user.Role = "Admin";
+        await _context.SaveChangesAsync();
+        return PromoteResult.Success;
+    }
+
 }

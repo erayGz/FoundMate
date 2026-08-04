@@ -1,9 +1,11 @@
+using System.Security.Claims;
 using FounderMate.Api.DTOs.Auth;
 using FounderMate.Api.DTOs.Common;
 using FounderMate.Api.DTOs.User;
 using FounderMate.Api.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.VisualBasic;
 
 namespace FounderMate.Api.Controllers;
 
@@ -41,8 +43,15 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
     {
         _logger.LogInformation("Login attempt for {Email}", request.Email);
-        var result = await _userService.LoginAsync(request);
-        return Ok(result);
+        try
+        {
+            var result = await _userService.LoginAsync(request);
+            return Ok(result);
+        }
+        catch (InvalidOperationException)
+        {
+            return Unauthorized(new { message = "Invalid email or password." });
+        }
     }
 
     [HttpGet("{id:int}")]
@@ -133,8 +142,14 @@ public class UsersController : ControllerBase
     [HttpGet("me")]
     [ProducesResponseType(typeof(UserResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetCurrentUser([FromQuery] int id)
+    public async Task<IActionResult> GetCurrentUser()
     {
+        var claimId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id);
+        if (!claimId)
+        {
+            return Unauthorized(new { message = "Missing user id claim." });
+        }
+
         _logger.LogInformation("Fetching current user with ID {UserId}", id);
         var user = await _userService.GetByIdAsync(id);
         if (user is null)
@@ -159,7 +174,37 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> AdminGetAll()
     {
-        var users = await _userService.GetAllAsync();
-        return Ok(users);
+        var userid = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userid is null)
+        {
+            return NotFound(new { message = "Not found" });
+        }
+        return Ok(userid);
+    }
+
+    [HttpPut("role/promote")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> PromoteToAdmin([FromQuery] string email)
+    {
+        if (string.IsNullOrWhiteSpace(email) || !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email))
+        {
+            return BadRequest(new { message = "A valid email address is required." });
+        }
+
+        _logger.LogInformation("Promoting {Email} to Admin.", email);
+        var result = await _userService.PromoteToAdminAsync(email);
+        if (result == PromoteResult.NotFound)
+        {
+            return NotFound(new { message = "User not found." });
+        }
+        if (result == PromoteResult.AlreadyAdmin)
+        {
+            return BadRequest(new { message = "User is already an Admin." });
+        }
+        return Ok(new { message = "User promoted to Admin." });
     }
 }

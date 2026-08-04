@@ -3,6 +3,14 @@ using FounderMate.Api.DTOs.Common;
 using FounderMate.Api.DTOs.User;
 
 namespace FounderMate.Api.Interfaces;
+
+public enum PromoteResult
+{
+    Success,
+    NotFound,
+    AlreadyAdmin
+}
+
 public interface IUserService
 {
     Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request);
@@ -14,4 +22,5 @@ public interface IUserService
     Task<UserResponseDto?> GetByEmailAsync(string email);
     Task<bool> ChangePasswordAsync(int userId, ChangePasswordRequestDto request);
     Task<bool> IsEmailAvailableAsync(string email);
+    Task<PromoteResult> PromoteToAdminAsync(string email);
 }
