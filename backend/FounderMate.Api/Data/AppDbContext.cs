@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
     public DbSet<TaskComment> TaskComments => Set<TaskComment>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -99,6 +100,17 @@ public class AppDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(c => c.AuthorId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasOne(n => n.User)
+                  .WithMany(u => u.Notifications)
+                  .HasForeignKey(n => n.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(n => new { n.UserId, n.IsRead });
+            entity.HasIndex(n => n.CreatedAt);
         });
     }
 }
