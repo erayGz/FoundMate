@@ -16,6 +16,7 @@ using Microsoft.OpenApi;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,10 +63,25 @@ builder.Services.Configure<FileUploadSettings>(
 builder.Services.Configure<AiSettings>(
     builder.Configuration.GetSection(AiSettings.SectionName));
 
+builder.Services.Configure<CorsSettings>(
+    builder.Configuration.GetSection(CorsSettings.SectionName));
+
+builder.Services.Configure<RateLimitingSettings>(
+    builder.Configuration.GetSection(RateLimitingSettings.SectionName));
+
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection(EmailSettings.SectionName));
+
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt settings are not configured.");
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection(JwtSettings.SectionName));
+
+var corsSettings = builder.Configuration.GetSection(CorsSettings.SectionName).Get<CorsSettings>()
+    ?? new CorsSettings();
+
+var rateLimitSettings = builder.Configuration.GetSection(RateLimitingSettings.SectionName).Get<RateLimitingSettings>()
+    ?? new RateLimitingSettings();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -163,13 +179,36 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddRateLimiter(options =>
+{
+    if (rateLimitSettings.Enabled)
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<HttpContext, string>(context =>
+            System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                factory: _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = rateLimitSettings.PermitLimit,
+                    Window = TimeSpan.FromSeconds(rateLimitSettings.WindowSeconds),
+                    QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst,
+                    QueueLimit = rateLimitSettings.QueueLimit
+                }));
+    }
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(corsSettings.AllowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod();
+        
+        if (corsSettings.AllowCredentials)
+        {
+            policy.AllowCredentials();
+        }
     });
 });
 
@@ -183,6 +222,11 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+if (rateLimitSettings.Enabled)
+{
+    app.UseRateLimiter();
 }
 
 app.UseCors("AllowFrontend");
