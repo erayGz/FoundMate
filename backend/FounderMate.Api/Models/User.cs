@@ -24,4 +24,7 @@ public class User
     public DateTime CreatedAt { get; set; }
 
     public DateTime? PasswordChangedAt { get; set; }
+
+    public ICollection<Project> Projects { get; set; } = new List<Project>();
+    public ICollection<TeamMember> TeamMemberships { get; set; } = new List<TeamMember>();
 }
