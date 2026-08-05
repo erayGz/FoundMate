@@ -13,6 +13,8 @@ public class AppDbContext : DbContext
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Team> Teams => Set<Team>();
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
+    public DbSet<TaskItem> Tasks => Set<TaskItem>();
+    public DbSet<TaskComment> TaskComments => Set<TaskComment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,6 +59,46 @@ public class AppDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(m => new { m.TeamId, m.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<TaskItem>(entity =>
+        {
+            entity.HasOne(t => t.Project)
+                  .WithMany()
+                  .HasForeignKey(t => t.ProjectId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(t => t.Team)
+                  .WithMany()
+                  .HasForeignKey(t => t.TeamId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(t => t.Assignee)
+                  .WithMany()
+                  .HasForeignKey(t => t.AssigneeId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(t => t.Reporter)
+                  .WithMany()
+                  .HasForeignKey(t => t.ReporterId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(t => t.ProjectId);
+            entity.HasIndex(t => t.AssigneeId);
+            entity.HasIndex(t => t.Status);
+        });
+
+        modelBuilder.Entity<TaskComment>(entity =>
+        {
+            entity.HasOne(c => c.Task)
+                  .WithMany(t => t.Comments)
+                  .HasForeignKey(c => c.TaskId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(c => c.Author)
+                  .WithMany()
+                  .HasForeignKey(c => c.AuthorId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
