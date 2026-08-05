@@ -1,13 +1,14 @@
-using FounderMate.Api.DTOs.Common;
 using FounderMate.Api.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace FounderMate.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[SwaggerTag("Upload - File upload and management")]
 public class UploadController : ControllerBase
 {
     private readonly IFileUploadService _fileUploadService;
@@ -21,7 +22,10 @@ public class UploadController : ControllerBase
     [ProducesResponseType(typeof(UploadResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> UploadImage(IFormFile file, [FromForm] string? subFolder = "")
+    [SwaggerOperation(Summary = "Upload image", Description = "Uploads an image file. Validates file type (jpg, png, gif, webp) and size (max 5MB). Returns the file URL.")]
+    public async Task<IActionResult> UploadImage(
+        [SwaggerParameter("Image file to upload")] IFormFile file,
+        [FromForm][SwaggerParameter("Optional subfolder path")] string? subFolder = "")
     {
         if (!_fileUploadService.IsValidFile(file, out var error))
         {
@@ -40,7 +44,9 @@ public class UploadController : ControllerBase
     [HttpDelete]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Delete([FromQuery] string url)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(Summary = "Delete uploaded file", Description = "Deletes a previously uploaded file by its URL.")]
+    public async Task<IActionResult> Delete([FromQuery][SwaggerParameter("Full URL of the file to delete")] string url)
     {
         if (string.IsNullOrWhiteSpace(url))
         {

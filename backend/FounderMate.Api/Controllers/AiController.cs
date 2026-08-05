@@ -2,12 +2,14 @@ using System.Security.Claims;
 using FounderMate.Api.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace FounderMate.Api.Controllers;
 
 [ApiController]
 [Route("api/ai")]
 [Authorize]
+[SwaggerTag("AI - AI-powered features for founders")]
 public class AiController : ControllerBase
 {
     private readonly IAiService _aiService;
@@ -20,6 +22,8 @@ public class AiController : ControllerBase
     [HttpPost("project-ideas")]
     [ProducesResponseType(typeof(AiResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerOperation(Summary = "Generate project ideas", Description = "Generates startup project ideas based on interests and skills using AI.")]
     public async Task<IActionResult> GenerateProjectIdeas([FromBody] ProjectIdeasRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Interests) || string.IsNullOrWhiteSpace(request.Skills))
@@ -34,6 +38,8 @@ public class AiController : ControllerBase
     [HttpPost("task-breakdown")]
     [ProducesResponseType(typeof(AiResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerOperation(Summary = "Generate task breakdown", Description = "Breaks down a project into actionable tasks using AI.")]
     public async Task<IActionResult> GenerateTaskBreakdown([FromBody] TaskBreakdownRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.ProjectTitle) || string.IsNullOrWhiteSpace(request.ProjectDescription))
@@ -48,6 +54,8 @@ public class AiController : ControllerBase
     [HttpPost("summarize-project")]
     [ProducesResponseType(typeof(AiResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerOperation(Summary = "Summarize project", Description = "Creates an executive summary of a project using AI.")]
     public async Task<IActionResult> SummarizeProject([FromBody] SummarizeProjectRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.ProjectTitle) || string.IsNullOrWhiteSpace(request.ProjectDescription))
@@ -62,6 +70,8 @@ public class AiController : ControllerBase
     [HttpPost("improve-task")]
     [ProducesResponseType(typeof(AiResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerOperation(Summary = "Improve task description", Description = "Enhances a task description with objectives, acceptance criteria, and technical notes using AI.")]
     public async Task<IActionResult> ImproveTaskDescription([FromBody] ImproveTaskRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.CurrentDescription))
@@ -76,6 +86,8 @@ public class AiController : ControllerBase
     [HttpPost("prioritize-tasks")]
     [ProducesResponseType(typeof(AiResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerOperation(Summary = "Prioritize tasks", Description = "Assigns priorities (Critical/High/Medium/Low) with justifications using AI.")]
     public async Task<IActionResult> SuggestTaskPriorities([FromBody] PrioritizeTasksRequest request)
     {
         if (request.TaskTitles.Count == 0 || request.TaskDescriptions.Count == 0 || request.TaskTitles.Count != request.TaskDescriptions.Count)
@@ -90,6 +102,8 @@ public class AiController : ControllerBase
     [HttpPost("standup-summary")]
     [ProducesResponseType(typeof(AiResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerOperation(Summary = "Generate standup summary", Description = "Creates a daily standup summary from completed/in-progress tasks and blockers using AI.")]
     public async Task<IActionResult> GenerateStandupSummary([FromBody] StandupSummaryRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.UserName))

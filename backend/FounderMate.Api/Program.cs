@@ -26,6 +26,25 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "FounderMate API",
+        Version = "v1",
+        Description = "API for FounderMate - A SaaS platform for founders to manage projects, teams, and tasks.",
+        Contact = new OpenApiContact
+        {
+            Name = "FounderMate Team",
+            Email = "support@foundermate.com",
+            Url = new Uri("https://foundermate.com")
+        },
+        License = new OpenApiLicense
+        {
+            Name = "MIT License",
+            Url = new Uri("https://opensource.org/licenses/MIT")
+        }
+    });
+
+    // JWT Bearer auth
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -33,16 +52,20 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Paste the JWT token here. Example: eyJhbGciOiJIUzI1NiIs...",
+        Description = "Enter JWT token: Bearer {token}"
     });
 
-    options.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
+    // Group by controller
+    options.TagActionsBy(api => new[] { api.GroupName ?? api.ActionDescriptor.RouteValues["controller"] ?? "Other" });
+    options.DocInclusionPredicate((_, _) => true);
+
+    // Include XML comments if available
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
     {
-        {
-            new OpenApiSecuritySchemeReference("Bearer"),
-            new List<string>()
-        },
-    });
+        options.IncludeXmlComments(xmlPath);
+    }
 });
 
 builder.Services.AddScoped<IUserService, UserService>();

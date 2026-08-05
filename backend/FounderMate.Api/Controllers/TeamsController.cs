@@ -4,12 +4,14 @@ using FounderMate.Api.DTOs.Team;
 using FounderMate.Api.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace FounderMate.Api.Controllers;
 
 [ApiController]
 [Route("api/projects/{projectId:int}/teams")]
 [Authorize]
+[SwaggerTag("Teams - Manage teams within projects")]
 public class TeamsController : ControllerBase
 {
     private readonly ITeamService _teamService;
@@ -21,7 +23,10 @@ public class TeamsController : ControllerBase
 
     [HttpPost]
     [ProducesResponseType(typeof(TeamResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [SwaggerOperation(Summary = "Create a team", Description = "Creates a new team within a project. Only the project owner can create teams.")]
     public async Task<IActionResult> Create(int projectId, [FromBody] TeamCreateRequestDto request)
     {
         var userId = GetUserId();
@@ -39,6 +44,7 @@ public class TeamsController : ControllerBase
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(TeamResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(Summary = "Get team by ID", Description = "Returns a single team by its ID within the project.")]
     public async Task<IActionResult> GetById(int projectId, int id)
     {
         var team = await _teamService.GetByIdAsync(id);
@@ -51,7 +57,8 @@ public class TeamsController : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedResponse<TeamResponseDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetByProject(int projectId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    [SwaggerOperation(Summary = "List teams in project", Description = "Returns paginated list of teams within a project.")]
+    public async Task<IActionResult> GetByProject(int projectId, [FromQuery][SwaggerParameter("Page number (1-based)")] int page = 1, [FromQuery][SwaggerParameter("Items per page")] int pageSize = 10)
     {
         var teams = await _teamService.GetByProjectAsync(projectId, page, pageSize);
         return Ok(teams);
@@ -59,8 +66,10 @@ public class TeamsController : ControllerBase
 
     [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(TeamResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(Summary = "Update team", Description = "Updates a team. Only the team owner can update.")]
     public async Task<IActionResult> Update(int projectId, int id, [FromBody] TeamUpdateRequestDto request)
     {
         var userId = GetUserId();
@@ -75,6 +84,8 @@ public class TeamsController : ControllerBase
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(Summary = "Delete team", Description = "Deletes a team. Only the team owner can delete.")]
     public async Task<IActionResult> Delete(int projectId, int id)
     {
         var userId = GetUserId();
@@ -86,7 +97,8 @@ public class TeamsController : ControllerBase
     [HttpGet("{teamId:int}/members")]
     [ProducesResponseType(typeof(PaginatedResponse<TeamMemberResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetMembers(int projectId, int teamId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    [SwaggerOperation(Summary = "List team members", Description = "Returns paginated list of members in a team.")]
+    public async Task<IActionResult> GetMembers(int projectId, int teamId, [FromQuery][SwaggerParameter("Page number (1-based)")] int page = 1, [FromQuery][SwaggerParameter("Items per page")] int pageSize = 10)
     {
         var team = await _teamService.GetByIdAsync(teamId);
         if (team is null || team.ProjectId != projectId)
@@ -104,6 +116,7 @@ public class TeamsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [SwaggerOperation(Summary = "Add team member", Description = "Adds a user to the team by email. Only the team owner can add members.")]
     public async Task<IActionResult> AddMember(int projectId, int teamId, [FromBody] AddTeamMemberRequestDto request)
     {
         var userId = GetUserId();
@@ -135,6 +148,7 @@ public class TeamsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(Summary = "Update member role", Description = "Updates a team member's role. Only the team owner can update roles.")]
     public async Task<IActionResult> UpdateMemberRole(int projectId, int teamId, int memberId, [FromBody] UpdateTeamMemberRoleRequestDto request)
     {
         var userId = GetUserId();
@@ -158,6 +172,7 @@ public class TeamsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [SwaggerOperation(Summary = "Remove team member", Description = "Removes a member from the team. Only the team owner can remove members. Cannot remove the owner.")]
     public async Task<IActionResult> RemoveMember(int projectId, int teamId, int memberId)
     {
         var userId = GetUserId();
