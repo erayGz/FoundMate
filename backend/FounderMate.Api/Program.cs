@@ -52,11 +52,15 @@ builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 builder.Services.AddScoped<ITeamService, TeamService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.Configure<FileUploadSettings>(
     builder.Configuration.GetSection(FileUploadSettings.SectionName));
+
+builder.Services.Configure<AiSettings>(
+    builder.Configuration.GetSection(AiSettings.SectionName));
 
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt settings are not configured.");
