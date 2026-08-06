@@ -32,7 +32,7 @@ public class UploadController : ControllerBase
             return BadRequest(new { message = error });
         }
 
-        var url = await _fileUploadService.UploadAsync(file, subFolder);
+        var url = await _fileUploadService.UploadAsync(file, subFolder ?? string.Empty);
         if (url is null)
         {
             return BadRequest(new { message = "Upload failed." });

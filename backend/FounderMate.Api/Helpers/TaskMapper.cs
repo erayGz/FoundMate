@@ -17,7 +17,7 @@ public static class TaskMapper
             ProjectId = task.ProjectId,
             TeamId = task.TeamId,
             AssigneeId = task.AssigneeId,
-            AssigneeName = task.Assignee?.Name,
+            AssigneeName = task.Assignee?.Name ?? string.Empty,
             ReporterId = task.ReporterId,
             ReporterName = task.Reporter?.Name ?? string.Empty,
             DueDate = task.DueDate,
