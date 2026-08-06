@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: FounderMate.Api/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/foundermate.db
+      - Jwt__Secret=${JWT_SECRET}
+      - Jwt__Issuer=FounderMate
+      - Jwt__Audience=FounderMate
+      - Jwt__ExpiryInMinutes=1440
+      - FileUpload__BaseUrl=https://api.foundermate.com
+      - Cors__AllowedOrigins__0=https://app.foundermate.com
+      - Cors__AllowedOrigins__1=https://foundermate.com
+      - RateLimiting__Enabled=true
+      - RateLimiting__PermitLimit=100
+      - RateLimiting__WindowSeconds=60
+      - Email__Provider=SendGrid
+      - Email__FromEmail=noreply@foundermate.com
+      - Email__FromName=FounderMate
+      - Email__SendGridApiKey=${SENDGRID_API_KEY}
+      - Ai__Provider=OpenAI
+      - Ai__ApiKey=${OPENAI_API_KEY}
+      - Ai__Model=gpt-4o-mini
+      - Ai__Enabled=true
+    volumes:
+      - foundermate_data:/app/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  foundermate_data:

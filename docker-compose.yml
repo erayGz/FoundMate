@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: FounderMate.Api/Dockerfile
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/foundermate.db
+      - Jwt__Secret=${JWT_SECRET:-SuperSecretKey1234567890abcdefghijklmnop}
+      - Jwt__Issuer=FounderMate
+      - Jwt__Audience=FounderMate
+      - Jwt__ExpiryInMinutes=1440
+      - FileUpload__BaseUrl=http://localhost:5000
+      - Cors__AllowedOrigins__0=http://localhost:5173
+      - Cors__AllowedOrigins__1=http://localhost:3000
+      - RateLimiting__Enabled=true
+      - RateLimiting__PermitLimit=200
+      - RateLimiting__WindowSeconds=60
+      - Email__Provider=Console
+    volumes:
+      - foundermate_data:/app/data
+      - ./FounderMate.Api/appsettings.Development.json:/app/appsettings.Development.json:ro
+    restart: unless-stopped
+
+volumes:
+  foundermate_data:
