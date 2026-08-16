@@ -6,14 +6,14 @@ EXPOSE 8081
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 
-# Create non-root user and the persistent data directory so that a fresh
-# named volume mounted at /app/data is initialized with appuser ownership
-# (the app must be able to create its SQLite database there).
-RUN adduser --disabled-password --gecos '' appuser \
-    && chown -R appuser /app \
-    && mkdir -p /app/data \
-    && chown appuser:appuser /app/data
-USER appuser
+# The .NET 10 aspnet image already provides a non-root 'app' user; create the
+# persistent data directory as root, then run as 'app' so a fresh named volume
+# mounted at /app/data is initialized with app ownership (the app must be able
+# to create its SQLite database there).
+USER root
+RUN mkdir -p /app/data \
+    && chown -R app:app /app/data
+USER app
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
