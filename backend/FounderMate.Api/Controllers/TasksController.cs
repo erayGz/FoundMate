@@ -96,8 +96,14 @@ public class TasksController : ControllerBase
         var userId = GetUserId();
         try
         {
+            var existing = await _taskService.GetByIdAsync(id);
+            if (existing is null || existing.ProjectId != projectId)
+            {
+                return NotFound();
+            }
+
             var task = await _taskService.UpdateAsync(userId, id, request);
-            if (task is null || task.ProjectId != projectId)
+            if (task is null)
             {
                 return Forbid();
             }
@@ -117,6 +123,12 @@ public class TasksController : ControllerBase
     public async Task<IActionResult> Delete(int projectId, int id)
     {
         var userId = GetUserId();
+        var existing = await _taskService.GetByIdAsync(id);
+        if (existing is null || existing.ProjectId != projectId)
+        {
+            return NotFound();
+        }
+
         var deleted = await _taskService.DeleteAsync(userId, id);
         return deleted ? NoContent() : Forbid();
     }

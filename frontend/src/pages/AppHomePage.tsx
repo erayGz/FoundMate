@@ -1,9 +1,9 @@
 import { ArrowRight, CheckCircle2, Compass, Plus, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { listProjects, type Project } from "../api/projects";
 import { ProjectCard } from "../components/app/ProjectCard";
 import { ApplicationsSummary } from "../components/applications/ApplicationsSummary";
-import { getSkillRecommendations } from "../data/projectLogic";
-import { projects } from "../data/projects";
 import { useProfile } from "../features/onboarding/ProfileContext";
 import { usePageTitle } from "../utils/usePageTitle";
 
@@ -37,10 +37,25 @@ function IntentAction({ goal }: { goal: keyof typeof goalLabels }) {
 export default function AppHomePage() {
   usePageTitle("Ana sayfa");
   const { profile } = useProfile();
+  const [recommendedProjects, setRecommendedProjects] = useState<Project[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    listProjects({ pageSize: 3 })
+      .then((response) => {
+        if (!cancelled) setRecommendedProjects(response.items);
+      })
+      .catch(() => {
+        if (!cancelled) setRecommendedProjects([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   if (!profile) return null;
 
   const firstName = profile.name.split(" ")[0];
-  const visibleProjects = getSkillRecommendations(projects, profile.skills).slice(0, 3);
 
   return <div className="mx-auto max-w-[1180px] px-5 py-8 sm:px-8 lg:py-10">
     <section>
@@ -72,12 +87,12 @@ export default function AppHomePage() {
         </div>
         <Link to="/discover" className="hidden items-center gap-1 text-sm font-semibold text-[#5448d8] sm:inline-flex">Tümünü gör <ArrowRight className="size-4" /></Link>
       </div>
-      <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visibleProjects.map((project) => <ProjectCard key={project.name} project={project} />)}</div>
+      <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{recommendedProjects.map((project) => <ProjectCard key={project.id} project={project} />)}</div>
     </section>
 
     <section className="mt-10 grid gap-3 sm:grid-cols-3">
       {[
-        { icon: CheckCircle2, title: "Profil tamamlandı", text: "Temel bilgilerin bu cihazda kayıtlı." },
+        { icon: CheckCircle2, title: "Profil tamamlandı", text: "Adın ve başlığın hesabında; diğer bilgilerin bu cihazda." },
         { icon: Compass, title: "Projeleri incele", text: "Rol ve ilerleme kanıtlarına göz at." },
         { icon: Sparkles, title: "Uyumu değerlendir", text: "Kısa bir deneme sprinti planla." },
       ].map(({ icon: Icon, title, text }) => <article key={title} className="rounded-2xl border border-[#e2e2e8] bg-[#fdfcf8] p-5">

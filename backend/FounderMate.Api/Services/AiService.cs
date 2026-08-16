@@ -1,7 +1,10 @@
+using Azure.AI.OpenAI;
 using FounderMate.Api.Config;
 using FounderMate.Api.Interfaces;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
+using OpenAI.Chat;
+using System.ClientModel;
 
 namespace FounderMate.Api.Services;
 
@@ -9,11 +12,13 @@ public class AiService : IAiService
 {
     private readonly AiSettings _settings;
     private readonly ILogger<AiService> _logger;
+    private readonly IHostEnvironment _env;
 
-    public AiService(IOptions<AiSettings> settings, ILogger<AiService> logger)
+    public AiService(IOptions<AiSettings> settings, ILogger<AiService> logger, IHostEnvironment env)
     {
         _settings = settings.Value;
         _logger = logger;
+        _env = env;
     }
 
     public async Task<string?> GenerateProjectIdeasAsync(string interests, string skills, int count = 5)
@@ -92,24 +97,70 @@ Blockers:
 
     private async Task<string?> CallAiAsync(string userPrompt, string systemPrompt)
     {
-        if (!_settings.Enabled || string.IsNullOrEmpty(_settings.ApiKey))
+        if (!_settings.Enabled || string.IsNullOrWhiteSpace(_settings.ApiKey))
         {
-            _logger.LogInformation("AI service not configured (missing API key). Returning mock response.");
-            return GetMockResponse(userPrompt);
+            if (_env.IsDevelopment())
+            {
+                _logger.LogInformation("AI service not configured (missing API key). Returning mock response (development only).");
+                return GetMockResponse(userPrompt);
+            }
+
+            throw new InvalidOperationException(
+                "AI service is not configured. Set Ai__ApiKey (and Ai__Enabled=true) to enable real AI responses.");
         }
 
         try
         {
-            // TODO: Implement real OpenAI/Azure OpenAI call when API key is configured
-            // For now, return mock response
-            _logger.LogInformation("AI service configured but real implementation pending. Returning mock response.");
-            return GetMockResponse(userPrompt);
+            return await CompleteAsync(systemPrompt, userPrompt);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "AI service call failed");
-            return GetMockResponse(userPrompt);
+
+            if (_env.IsDevelopment())
+            {
+                _logger.LogInformation("Returning mock response after AI failure (development only).");
+                return GetMockResponse(userPrompt);
+            }
+
+            throw;
         }
+    }
+
+    private async Task<string?> CompleteAsync(string systemPrompt, string userPrompt)
+    {
+        var messages = new List<ChatMessage>
+        {
+            new SystemChatMessage(systemPrompt),
+            new UserChatMessage(userPrompt)
+        };
+
+        var options = new ChatCompletionOptions
+        {
+            MaxOutputTokenCount = _settings.MaxTokens,
+            Temperature = _settings.Temperature,
+        };
+
+        if (string.Equals(_settings.Provider, "AzureOpenAI", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(_settings.Endpoint) || string.IsNullOrWhiteSpace(_settings.DeploymentName))
+            {
+                throw new InvalidOperationException("AI service (AzureOpenAI) requires Ai:Endpoint and Ai:DeploymentName.");
+            }
+
+            var azureClient = new AzureOpenAIClient(new Uri(_settings.Endpoint), new ApiKeyCredential(_settings.ApiKey));
+            var azureChat = azureClient.GetChatClient(_settings.DeploymentName);
+            return await CompleteChatAsync(azureChat, messages, options);
+        }
+
+        var chatClient = new ChatClient(_settings.Model, _settings.ApiKey);
+        return await CompleteChatAsync(chatClient, messages, options);
+    }
+
+    private static async Task<string?> CompleteChatAsync(ChatClient client, List<ChatMessage> messages, ChatCompletionOptions options)
+    {
+        var completion = await client.CompleteChatAsync(messages, options);
+        return completion.Value.Content[0].Text;
     }
 
     private string GetMockResponse(string prompt)
@@ -128,7 +179,7 @@ Blockers:
    - Complexity: Low
    - Monetization: Freemium + pro tiers";
         }
-        
+
         if (prompt.Contains("Break down this project"))
         {
             return @"1. **Set up project repository and CI/CD** - Initialize repo, configure GitHub Actions

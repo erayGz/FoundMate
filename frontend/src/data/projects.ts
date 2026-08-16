@@ -86,17 +86,4 @@ export const projects: MockProject[] = [
   },
 ];
 
-export const workingPreferenceLabels: Record<WorkingPreference, string> = {
-  remote: "Uzaktan", hybrid: "Hibrit", local: "Yerel / yüz yüze", flexible: "Esnek",
-};
-
-export const compensationLabels: Record<CompensationModel, string> = {
-  volunteer: "Gönüllü / portfolyo", paid: "Ücretli", equity: "Hisse", "open-to-discussion": "Konuşmaya açık",
-};
-
-export function findProjectById(projectId: string | undefined) {
-  return projects.find((project) => project.id === projectId);
-}
-
 export const availableSkills = ["Frontend", "Backend", "Mobile", "UI/UX", "Product", "Growth", "Data", "AI / ML", "DevOps", "B2B Sales", "DevRel"];
-export const projectCategories = Array.from(new Set(projects.map((project) => project.category))).sort((a, b) => a.localeCompare(b, "tr"));

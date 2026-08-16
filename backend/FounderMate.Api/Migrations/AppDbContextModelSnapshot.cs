@@ -17,6 +17,80 @@ namespace FounderMate.Api.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.10");
 
+            modelBuilder.Entity("FounderMate.Api.Models.Application", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ApplicantId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CommitmentPreference")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompensationPreferences")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Contribution")
+                        .HasMaxLength(800)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FirstSprintProposal")
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Motivation")
+                        .HasMaxLength(600)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PortfolioUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SelectedRole")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WeeklyAvailability")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicantId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("Applications");
+                });
+
             modelBuilder.Entity("FounderMate.Api.Models.Notification", b =>
                 {
                     b.Property<int>("Id")
@@ -82,6 +156,7 @@ namespace FounderMate.Api.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("OwnerId")
+                        .HasMaxLength(200)
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Title")
@@ -97,6 +172,24 @@ namespace FounderMate.Api.Migrations
                     b.HasIndex("OwnerId");
 
                     b.ToTable("Projects");
+                });
+
+            modelBuilder.Entity("FounderMate.Api.Models.ProjectMember", b =>
+                {
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ProjectId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ProjectMembers");
                 });
 
             modelBuilder.Entity("FounderMate.Api.Models.TaskComment", b =>
@@ -303,6 +396,25 @@ namespace FounderMate.Api.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("FounderMate.Api.Models.Application", b =>
+                {
+                    b.HasOne("FounderMate.Api.Models.User", "Applicant")
+                        .WithMany()
+                        .HasForeignKey("ApplicantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FounderMate.Api.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Applicant");
+
+                    b.Navigation("Project");
+                });
+
             modelBuilder.Entity("FounderMate.Api.Models.Notification", b =>
                 {
                     b.HasOne("FounderMate.Api.Models.User", "User")
@@ -323,6 +435,25 @@ namespace FounderMate.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("FounderMate.Api.Models.ProjectMember", b =>
+                {
+                    b.HasOne("FounderMate.Api.Models.Project", "Project")
+                        .WithMany("Members")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FounderMate.Api.Models.User", "User")
+                        .WithMany("ProjectMemberships")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FounderMate.Api.Models.TaskComment", b =>
@@ -415,6 +546,11 @@ namespace FounderMate.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FounderMate.Api.Models.Project", b =>
+                {
+                    b.Navigation("Members");
+                });
+
             modelBuilder.Entity("FounderMate.Api.Models.TaskItem", b =>
                 {
                     b.Navigation("Comments");
@@ -428,6 +564,8 @@ namespace FounderMate.Api.Migrations
             modelBuilder.Entity("FounderMate.Api.Models.User", b =>
                 {
                     b.Navigation("Notifications");
+
+                    b.Navigation("ProjectMemberships");
 
                     b.Navigation("Projects");
 

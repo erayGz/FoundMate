@@ -3,6 +3,8 @@ using FounderMate.Api.Interfaces;
 using FounderMate.Api.Services;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 using Moq;
 using FluentAssertions;
 using Xunit;
@@ -23,8 +25,8 @@ public class AiServiceTests
             MaxTokens = 2000,
             Temperature = 0.7f
         });
-        
-        _aiService = new AiService(settings, Mock.Of<ILogger<AiService>>());
+
+        _aiService = new AiService(settings, Mock.Of<ILogger<AiService>>(), new FakeHostEnvironment("Development"));
     }
 
     [Fact]
@@ -105,4 +107,20 @@ public class AiServiceTests
         result.Should().Contain("Today");
         result.Should().Contain("Blockers");
     }
+}
+
+internal sealed class FakeHostEnvironment : IHostEnvironment
+{
+    public FakeHostEnvironment(string environmentName)
+    {
+        EnvironmentName = environmentName;
+        ApplicationName = "FounderMate.Api.Tests";
+        ContentRootPath = Directory.GetCurrentDirectory();
+        ContentRootFileProvider = new PhysicalFileProvider(ContentRootPath);
+    }
+
+    public string EnvironmentName { get; set; }
+    public string ApplicationName { get; set; }
+    public string ContentRootPath { get; set; }
+    public IFileProvider ContentRootFileProvider { get; set; }
 }

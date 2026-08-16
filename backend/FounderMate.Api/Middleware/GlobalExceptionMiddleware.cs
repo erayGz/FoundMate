@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using FounderMate.Api.DTOs.Common;
+using FounderMate.Api.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -38,8 +39,9 @@ public class GlobalExceptionMiddleware
         {
             ArgumentException => (HttpStatusCode.BadRequest, exception.Message, (object?)null),
             InvalidOperationException => (HttpStatusCode.BadRequest, exception.Message, (object?)null),
+            ConflictException => (HttpStatusCode.Conflict, exception.Message, (object?)null),
             KeyNotFoundException => (HttpStatusCode.NotFound, "Resource not found.", (object?)null),
-            UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "Unauthorized access.", (object?)null),
+            UnauthorizedAccessException => (HttpStatusCode.Forbidden, "You are not allowed to perform this action.", (object?)null),
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred.", (object?)null)
         };
 

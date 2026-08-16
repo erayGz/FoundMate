@@ -73,8 +73,14 @@ public class TeamsController : ControllerBase
     public async Task<IActionResult> Update(int projectId, int id, [FromBody] TeamUpdateRequestDto request)
     {
         var userId = GetUserId();
+        var existing = await _teamService.GetByIdAsync(id);
+        if (existing is null || existing.ProjectId != projectId)
+        {
+            return NotFound();
+        }
+
         var team = await _teamService.UpdateAsync(userId, id, request);
-        if (team is null || team.ProjectId != projectId)
+        if (team is null)
         {
             return Forbid();
         }
@@ -89,6 +95,12 @@ public class TeamsController : ControllerBase
     public async Task<IActionResult> Delete(int projectId, int id)
     {
         var userId = GetUserId();
+        var existing = await _teamService.GetByIdAsync(id);
+        if (existing is null || existing.ProjectId != projectId)
+        {
+            return NotFound();
+        }
+
         var deleted = await _teamService.DeleteAsync(userId, id);
         return deleted ? NoContent() : Forbid();
     }

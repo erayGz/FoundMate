@@ -27,5 +27,6 @@ public class User
 
     public ICollection<Project> Projects { get; set; } = new List<Project>();
     public ICollection<TeamMember> TeamMemberships { get; set; } = new List<TeamMember>();
+    public ICollection<ProjectMember> ProjectMemberships { get; set; } = new List<ProjectMember>();
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 }

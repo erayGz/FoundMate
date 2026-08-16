@@ -1,0 +1,23 @@
+# Build context for the API service is /backend (Railway) or the repo root
+# (docker compose). Keep it free of local build artifacts and secrets.
+**/bin
+**/obj
+.vs/
+*.user
+*.suo
+
+# Local SQLite databases and uploads
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+data/
+uploads/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Docs not needed in the image
+*.md

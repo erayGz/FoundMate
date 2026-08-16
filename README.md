@@ -1,94 +1,129 @@
-# Foundmate
+# FounderMate
 
-Foundmate is a people-and-project discovery product for finding compatible collaborators, presenting concrete project progress, and testing how well a team works together through a short trial sprint.
+FounderMate is a people-and-project discovery product for finding compatible collaborators, presenting concrete project progress, and testing how well a team works together through a short trial sprint.
 
 ## Current status
 
-The repository currently contains the approved responsive landing page plus a frontend-only application prototype. The prototype includes browser routing, locally persisted onboarding, an application shell, intent-aware dashboard actions, skill-based recommendations, filtered mock project discovery, project details, structured local project applications, and a first local project-draft form. Authentication, real matching, messaging, AI assistance, persistent server data, and backend APIs are not implemented.
+Working full-stack MVP: a React + TypeScript frontend backed by an ASP.NET Core Web API with a persistent SQLite database. Registration and login use JWT bearer tokens, and the app includes onboarding, project discovery, project creation/editing, structured project applications (apply, review, withdraw), incoming applications, and a member home. Email notifications are currently written to the console only, and the AI endpoints exist but are disabled by default.
 
 ## Repository structure
 
 ```text
 FoundMate/
-├── frontend/  # React landing page and frontend prototype
-├── backend/   # Reserved for future backend work
-└── docs/      # Product and technical documentation
+├── frontend/                    # React (Vite) SPA
+├── backend/FounderMate.Api/     # ASP.NET Core Web API
+├── backend/FounderMate.Api.Tests/# API tests
+├── nginx/                       # Reverse-proxy config used by docker-compose.prod.yml
+├── docs/                        # Product and technical documentation
+├── docker-compose.yml           # Local/dev Docker stack
+├── docker-compose.prod.yml      # Production Docker stack
+└── .env.example                 # Required environment variables
 ```
 
-## Frontend stack
+## Stack
 
-The existing export was identified as a Vite application using React 18, TypeScript, Tailwind CSS 4, React Router, and Lucide React icons. npm is the normalized package manager and `package-lock.json` is committed for reproducible installs.
+- Frontend: Vite, React 18, TypeScript, Tailwind CSS 4, React Router, Lucide React
+- Backend: ASP.NET Core (`.NET 10`), EF Core + SQLite, JWT bearer auth, FluentValidation, rate limiting, CORS, forwarded-headers support for reverse proxies
+- Deployment: Docker Compose; nginx reverse proxy; SQLite file in a Docker named volume
 
-## Prototype routes
+## Routes
 
-- `/` - approved Foundmate landing page
-- `/onboarding` - three-step local profile setup
-- `/app` - prototype member home
-- `/discover` - searchable mock project discovery
-- `/projects/new` - local single-draft project creation foundation
-- `/projects/:projectId` - project detail and application status
-- `/projects/:projectId/apply` - structured application, review, and submitted view
-- `/applications` - locally stored applications
-
-The `/app`, `/discover`, `/applications`, and `/projects/new` routes require a locally completed prototype profile. Profile information remains in the current browser's localStorage and is not sent to a server.
-
-Onboarding progress and the completed profile are stored separately:
-
-- `foundmate.onboardingDraft.v1` - incomplete onboarding progress
-- `foundmate.profile.v1` - completed profile
-
-The former `foundmate.onboarding-draft.v1` draft key is migrated automatically. Completed users opening `/onboarding` see a completion state; deliberate editing is available at `/onboarding?mode=edit`.
-
-Dashboard primary actions follow the profile's intent (`project-owner`, `contributor`, or `both`). Project-owner and both-intent project creation actions navigate to `/projects/new`. Project recommendations remain based on selected skills. Discovery uses six typed mock projects and supports combined search, role, category, and normalized working-preference filters.
-
-The first project-creation foundation stores one browser-local draft under `foundmate.projectDraft.v1`. The draft currently has four fields only: project name, short description, category, and current stage. Publishing is not implemented, multiple user-created projects are not implemented, and user-created drafts do not appear in Discover.
-
-Project records also contain structured progress, weekly expectations, normalized compensation and working preferences, and fixed trial-sprint tasks. Applications reference projects by ID and are stored separately under `foundmate.applications.v1`. Partial drafts are allowed: `Taslak olarak kaydet` stores the current form values even when submission-required fields are incomplete, shows visible `Taslak kaydedildi.` feedback with a last-saved time, and offers a link to `Başvurularım`. Draft validation is intentionally lighter than submission validation; it checks the project/profile association, supported enum values, safe strings, and optional HTTP/HTTPS portfolio URLs, while final review/submission still requires the complete role, narrative, availability, commitment, compensation, and consent rules.
-
-Drafts survive refresh, submitted applications can be viewed and edited, and withdrawn applications remain visible with their local content under the `Geri çekildi` status. Reopening a withdrawn application restores its previous answers, while starting fresh uses project defaults. Application data is isolated by project ID and the local profile's stable `completedAt` identity, so one project's draft never populates another project's form.
-
-The application flow uses a mobile-safe radio-card control for weekly availability instead of a native select. Application review cards, application list cards, project metadata, portfolio URLs, and long user-entered text use robust wrapping and responsive `min-width: 0` layouts so long unbroken strings stay inside their containers.
-
-Submitting an application in the current prototype does not contact or notify a real project owner.
+- `/` - landing page
+- `/login`, `/register`
+- `/onboarding` - profile setup (auth required)
+- `/app` - member home (auth + profile required)
+- `/discover` - project discovery (search, roles, categories, working preferences)
+- `/projects/new` - create a project
+- `/projects/:projectId/edit` - edit a project
+- `/projects/:projectId` - project detail
+- `/projects/:projectId/apply` - structured application flow
+- `/applications` - applications I sent
+- `/my-project` - my own project
+- `/my-project/applications` - incoming applications (apply/review/withdraw)
 
 ## Prerequisites
 
-- Node.js 18 or newer
-- npm 9 or newer
+- Node.js 18 or newer and npm 9 or newer
+- .NET 10 SDK (for the backend)
+- Docker (optional, for containerized runs)
 
-## Run the frontend
+## Run locally
 
-From the repository root:
+Frontend (from repository root):
 
 ```powershell
 cd frontend
 npm install
-npm run dev
+npm run dev   # http://localhost:5173
 ```
 
-Create a production build with:
+Backend (from repository root):
 
 ```powershell
-cd frontend
-npm run build
+cd backend
+$env:JWT_SECRET = "dev-only-secret-that-is-at-least-thirty-two-bytes"
+dotnet run --project FounderMate.Api   # http://localhost:5255
 ```
 
-Run TypeScript validation separately with:
+The API fails fast at startup if `Jwt__Secret` is missing or shorter than 256 bits; never commit a real secret. SQLite will create `foundermate.db` next to the app.
+
+Frontend/API origin defaults are preconfigured: the Vite dev server uses `http://localhost:5173` and the API allows it via CORS. API docs (Swagger) are available in Development at `/swagger`.
+
+## Tests
 
 ```powershell
-cd frontend
-npm run typecheck
+cd backend
+dotnet test
 ```
 
-Run the focused application-flow assertions with:
+## Environment variables
+
+Copy `.env.example` to `.env` and fill in the values. `JWT_SECRET` is required for any run (including Docker). `APP_ORIGIN` is required for the production stack only.
+
+## Docker
+
+Dev stack (API on `http://localhost:5000`, SQLite persisted in the `foundermate_data` volume):
 
 ```powershell
-cd frontend
-npm run assert:applications
+docker compose up -d
 ```
 
-The development server prints the local URL, normally `http://localhost:5173`.
+Production stack (single exposed HTTP port `80` via nginx; set `JWT_SECRET` and `APP_ORIGIN` in `.env`):
+
+```powershell
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+## Deployment
+
+- Recommended architecture: static React build served by the hosting/CDN of your choice → public HTTPS URL → reverse proxy (the bundled nginx container) → ASP.NET API → SQLite in a persistent volume. TLS/HTTPS is terminated by the hosting-layer proxy in front of the nginx container, which listens on plain HTTP internally.
+- The frontend is currently developed against the local dev API (`http://localhost:5255`) via `VITE_API_URL`. At deploy time, build it with the deployed API origin, e.g. `VITE_API_URL=https://api.your-domain.com npm run build`, and set the same origin in `APP_ORIGIN` for the API's CORS policy. (Do not hardcode the final deployment URL in source; it is build/runtime configuration.)
+- Deploying with Docker: `docker compose -f docker-compose.prod.yml up -d --build`. Everything the API needs comes from environment variables; no code change is required.
+- Database: SQLite file at `/app/data/foundermate.db` inside the `foundermate_data` volume. Back up that file (and surrounding `-wal`/`-shm` files) on your normal schedule, e.g.:
+
+```powershell
+docker run --rm -v foundermate_data:/data -v ${PWD}:/backup alpine tar czf /backup/foundermate-backup.tgz -C /data .
+```
+
+Restore by extracting a backup into the volume before first start.
+
+### Railway (recommended)
+
+The repo carries Railway service configs (`backend/railway.toml` for the API, `frontend/railway.toml` for the frontend) and per-service Dockerfiles. Railway terminates HTTPS and provides the persistent SQLite volume (`/app/data`). Order matters because the frontend bakes the API URL at build time:
+
+1. Install and log in: `npm i -g @railway/cli && railway login`; create a project with `railway init`.
+2. **Deploy the API** from `backend/` (`railway up`). On this service set variables:
+   - `JWT_SECRET` (generate: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`)
+   - `ConnectionStrings__DefaultConnection=Data Source=/app/data/foundermate.db`
+   - `APP_ORIGIN=https://<frontend>.up.railway.app` (set after step 4) — or `Cors__AllowedOrigins__0` directly
+   - `ASPNETCORE_ENVIRONMENT=Production`
+   Health check `/health` confirms the service is up (a fresh volume initializes the SQLite database automatically; migrations run on startup).
+3. Get the API's public HTTPS URL (`railway domain`) — this is the deployed API origin.
+4. **Deploy the frontend** from `frontend/`: set `VITE_API_URL` to the API URL from step 3 in `frontend/railway.toml` (`buildArgs`), then `railway up`. The Dockerfile fails the build if `VITE_API_URL` is empty.
+5. Backfill `APP_ORIGIN` on the API with the frontend URL from step 4, then `railway redeploy`/restart the API.
+
+No code changes are required for deployment; build-time and runtime configuration come from environment variables.
 
 ## Planned areas
 
-`backend/` is reserved for a future server application; no .NET project has been created. Future product work should define publishing, multiple user-created projects, project editing, incoming applications, authenticated ownership, messaging, notifications, AI support, and backend persistence before those behaviors are implemented.
+Messaging, notifications, real email (SendGrid/SMTP), media upload serving, and AI assistance are the next feature areas. The API already has services/endpoints for teams, tasks, notifications, uploads, and AI; the MVP keeps AI and real email disabled by default because they require external keys.

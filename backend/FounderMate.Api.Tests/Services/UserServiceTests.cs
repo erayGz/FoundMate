@@ -1,5 +1,7 @@
 using FounderMate.Api.Data;
 using FounderMate.Api.DTOs.Auth;
+using FounderMate.Api.DTOs.User;
+using FounderMate.Api.Helpers;
 using FounderMate.Api.Interfaces;
 using FounderMate.Api.Models;
 using FounderMate.Api.Services;
@@ -53,7 +55,7 @@ public class UserServiceTests : TestBase
     }
 
     [Fact]
-    public async Task RegisterAsync_WithExistingEmail_ShouldThrowInvalidOperationException()
+    public async Task RegisterAsync_WithExistingEmail_ShouldThrowConflictException()
     {
         // Arrange
         CreateTestUser("existing@example.com", "Existing User");
@@ -65,7 +67,7 @@ public class UserServiceTests : TestBase
         };
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _userService.RegisterAsync(request));
+        await Assert.ThrowsAsync<ConflictException>(() => _userService.RegisterAsync(request));
     }
 
     [Fact]
@@ -167,5 +169,61 @@ public class UserServiceTests : TestBase
 
         // Assert
         result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task UpdateProfileAsync_WithNameAndHeadline_ShouldPersistChanges()
+    {
+        // Arrange
+        var user = CreateTestUser("profileowner@example.com", "Profile Owner");
+        var request = new UpdateProfileRequestDto
+        {
+            Name = "Updated Name",
+            Headline = "Ürün odaklı geliştirici"
+        };
+
+        // Act
+        var result = await _userService.UpdateProfileAsync(user.Id, request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Name.Should().Be("Updated Name");
+        result.Headline.Should().Be("Ürün odaklı geliştirici");
+
+        var persisted = await Context.Users.FindAsync(user.Id);
+        persisted!.Name.Should().Be("Updated Name");
+        persisted.Headline.Should().Be("Ürün odaklı geliştirici");
+    }
+
+    [Fact]
+    public async Task UpdateProfileAsync_WithPartialRequest_ShouldOnlyUpdateProvidedFields()
+    {
+        // Arrange
+        var user = CreateTestUser("partialprofile@example.com", "Partial Profile");
+        var request = new UpdateProfileRequestDto
+        {
+            Name = "Only Name Changed"
+        };
+
+        // Act
+        var result = await _userService.UpdateProfileAsync(user.Id, request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Name.Should().Be("Only Name Changed");
+        result.Headline.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateProfileAsync_WithNonExistentUser_ShouldReturnNull()
+    {
+        // Arrange
+        var request = new UpdateProfileRequestDto { Name = "Ghost" };
+
+        // Act
+        var result = await _userService.UpdateProfileAsync(99999, request);
+
+        // Assert
+        result.Should().BeNull();
     }
 }

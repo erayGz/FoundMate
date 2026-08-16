@@ -17,4 +17,15 @@ public static class ProjectMapper
             CreatedAt = project.CreatedAt
         };
     }
+
+    public static ProjectMemberResponseDto ToMemberDto(this ProjectMember member)
+    {
+        return new ProjectMemberResponseDto
+        {
+            UserId = member.UserId,
+            UserName = member.User?.Name ?? string.Empty,
+            UserHeadline = member.User?.Headline,
+            JoinedAt = member.JoinedAt
+        };
+    }
 }

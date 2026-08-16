@@ -16,6 +16,8 @@ public class AppDbContext : DbContext
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
     public DbSet<TaskComment> TaskComments => Set<TaskComment>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Application> Applications => Set<Application>();
+    public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -111,6 +113,39 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(n => new { n.UserId, n.IsRead });
             entity.HasIndex(n => n.CreatedAt);
+        });
+
+        modelBuilder.Entity<Application>(entity =>
+        {
+            entity.HasOne(a => a.Project)
+                  .WithMany()
+                  .HasForeignKey(a => a.ProjectId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(a => a.Applicant)
+                  .WithMany()
+                  .HasForeignKey(a => a.ApplicantId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(a => a.Status);
+            entity.HasIndex(a => a.CreatedAt);
+        });
+
+        modelBuilder.Entity<ProjectMember>(entity =>
+        {
+            entity.HasKey(m => new { m.ProjectId, m.UserId });
+
+            entity.HasOne(m => m.Project)
+                  .WithMany(p => p.Members)
+                  .HasForeignKey(m => m.ProjectId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(m => m.User)
+                  .WithMany(u => u.ProjectMemberships)
+                  .HasForeignKey(m => m.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(m => m.UserId);
         });
     }
 }

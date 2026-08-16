@@ -1,0 +1,20 @@
+# Railway service config for the ASP.NET Core API.
+# Service root directory: /backend   (Dockerfile path is relative to it).
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "FounderMate.Api/Dockerfile"
+watchPatterns = ["FounderMate.Api/**"]
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[run]
+# Persistent SQLite storage. The named Railway volume is mounted at /app/data;
+# the app creates foundermate.db there (see FoundMate ConnectionStrings variable).
+volumes = [
+  { trainVolumePath = "/app/data", mountPath = "/app/data" }
+]

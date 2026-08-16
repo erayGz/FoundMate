@@ -91,10 +91,10 @@ export default function LandingPage() {
     <header className="sticky top-0 z-50 border-b border-transparent bg-[#fdfcf8]/95 backdrop-blur-sm">
       <div className="mx-auto flex h-[76px] max-w-[1180px] items-center justify-between px-5 lg:px-0"><Logo />
         <nav className="hidden items-center gap-7 text-[13px] font-medium text-[#566074] md:flex"><a className="hover:text-[#5448d8]" href="#projects">Projeleri Keşfet</a><a className="hover:text-[#5448d8]" href="#how">Nasıl Çalışır?</a><a className="hover:text-[#5448d8]" href="#community">Topluluk</a></nav>
-        <div className="hidden items-center gap-4 md:flex"><Link className="text-[13px] font-semibold text-[#3a465d]" to="/app">Giriş Yap</Link><PrimaryButton to="/onboarding">Ücretsiz Başla <ArrowRight className="size-4" /></PrimaryButton></div>
+        <div className="hidden items-center gap-4 md:flex"><Link className="text-[13px] font-semibold text-[#3a465d]" to="/login">Giriş Yap</Link><PrimaryButton to="/register">Ücretsiz Başla <ArrowRight className="size-4" /></PrimaryButton></div>
         <button type="button" onClick={() => setMenuOpen(!menuOpen)} className="inline-flex size-11 items-center justify-center rounded-xl border border-[#e1e2e8] text-[#33405a] md:hidden" aria-controls="mobile-navigation" aria-expanded={menuOpen} aria-label={menuOpen ? "Menüyü kapat" : "Menüyü aç"}>{menuOpen ? <X /> : <Menu />}</button>
       </div>
-      {menuOpen && <div id="mobile-navigation" className="border-t border-[#e5e5ea] bg-[#fdfcf8] px-5 py-4 md:hidden"><nav className="flex flex-col gap-4 text-sm font-medium"><a onClick={closeMenu} href="#projects">Projeleri Keşfet</a><a onClick={closeMenu} href="#how">Nasıl Çalışır?</a><a onClick={closeMenu} href="#community">Topluluk</a><Link onClick={closeMenu} to="/app">Giriş Yap</Link><PrimaryButton to="/onboarding" className="w-full">Ücretsiz Başla</PrimaryButton></nav></div>}
+      {menuOpen && <div id="mobile-navigation" className="border-t border-[#e5e5ea] bg-[#fdfcf8] px-5 py-4 md:hidden"><nav className="flex flex-col gap-4 text-sm font-medium"><a onClick={closeMenu} href="#projects">Projeleri Keşfet</a><a onClick={closeMenu} href="#how">Nasıl Çalışır?</a><a onClick={closeMenu} href="#community">Topluluk</a><Link onClick={closeMenu} to="/login">Giriş Yap</Link><PrimaryButton to="/register" className="w-full">Ücretsiz Başla</PrimaryButton></nav></div>}
     </header>
 
     <section className="relative mx-auto grid max-w-[1180px] items-center gap-8 px-5 pb-16 pt-14 lg:grid-cols-[1.03fr_.97fr] lg:gap-12 lg:px-0 lg:pb-16 lg:pt-16">

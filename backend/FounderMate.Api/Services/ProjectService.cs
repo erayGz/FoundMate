@@ -130,4 +130,22 @@ public class ProjectService : IProjectService
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task<List<ProjectMemberResponseDto>> GetMembersAsync(int projectId)
+    {
+        var project = await _context.Projects.FindAsync(projectId);
+        if (project is null)
+        {
+            throw new KeyNotFoundException("Project not found.");
+        }
+
+        var members = await _context.ProjectMembers
+            .Where(m => m.ProjectId == projectId)
+            .Include(m => m.User)
+            .OrderBy(m => m.JoinedAt)
+            .ThenBy(m => m.User!.Name)
+            .ToListAsync();
+
+        return members.Select(m => m.ToMemberDto()).ToList();
+    }
 }

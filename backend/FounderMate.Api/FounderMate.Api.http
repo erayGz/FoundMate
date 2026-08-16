@@ -1,6 +1,39 @@
 @FounderMate.Api_HostAddress = http://localhost:5255
 
-GET {{FounderMate.Api_HostAddress}}/weatherforecast/
+# Health check
+GET {{FounderMate.Api_HostAddress}}/
+Accept: application/json
+
+###
+
+# Register a new user
+# @name register
+POST {{FounderMate.Api_HostAddress}}/api/users/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "tester@example.com",
+  "password": "S3cure!Passw0rd",
+  "name": "Test User"
+}
+
+###
+
+# Login (use the token from /api/users/me)
+POST {{FounderMate.Api_HostAddress}}/api/users/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "tester@example.com",
+  "password": "S3cure!Passw0rd"
+}
+
+###
+
+# List projects (public)
+GET {{FounderMate.Api_HostAddress}}/api/projects?page=1&pageSize=10
 Accept: application/json
 
 ###

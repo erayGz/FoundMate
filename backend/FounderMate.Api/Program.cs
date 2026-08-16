@@ -10,15 +10,35 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Docker-compose maps JWT_SECRET -> Jwt__Secret in the container env, but for
+// direct `dotnet run` runs accept the documented JWT_SECRET alias as well.
+if (!string.IsNullOrWhiteSpace(builder.Configuration["JWT_SECRET"])
+    && string.IsNullOrWhiteSpace(builder.Configuration["Jwt:Secret"]))
+{
+    builder.Configuration["Jwt:Secret"] = builder.Configuration["JWT_SECRET"];
+}
+
+// APP_ORIGIN is the documented deployment variable for the frontend origin.
+// Map it to the CORS policy when no Cors__AllowedOrigins__* is provided, so a
+// single variable configures CORS on any host (Railway env vars, direct runs).
+var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+if (!string.IsNullOrWhiteSpace(builder.Configuration["APP_ORIGIN"])
+    && corsOrigins is not { Length: > 0 })
+{
+    builder.Configuration["Cors:AllowedOrigins:0"] = builder.Configuration["APP_ORIGIN"];
+}
 
 builder.Services.AddControllers();
 
@@ -81,6 +101,7 @@ builder.Services.AddScoped<ITeamService, TeamService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IAiService, AiService>();
+builder.Services.AddScoped<IApplicationService, ApplicationService>();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -101,6 +122,14 @@ builder.Services.Configure<EmailSettings>(
 
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt settings are not configured.");
+
+if (string.IsNullOrWhiteSpace(jwtSettings.Secret) || Encoding.UTF8.GetByteCount(jwtSettings.Secret) < 32)
+{
+    throw new InvalidOperationException(
+        "Jwt:Secret is missing or too short (HMAC-SHA256 requires at least 32 bytes / 256 bits). " +
+        "Set the JWT_SECRET environment variable (or Jwt__Secret). Do not commit secrets to source.");
+}
+
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection(JwtSettings.SectionName));
 
@@ -129,7 +158,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnAuthenticationFailed = context =>
             {
-                Console.WriteLine($"[JWT] AUTHC FAIL: {context.Exception?.Message}");
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                logger.LogWarning("JWT authentication failed: {Message}", context.Exception?.Message);
                 return Task.CompletedTask;
             },
             OnTokenValidated = async context =>
@@ -239,9 +269,37 @@ builder.Services.AddCors(options =>
     });
 });
 
+// When running behind a reverse proxy (nginx), trust forwarded headers from the proxy
+// so rate limiting sees the real client IP. Configure via ForwardedHeaders:KnownNetworks.
+var forwardedNetworks = builder.Configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>();
+if (forwardedNetworks is { Length: > 0 })
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.ForwardLimit = 2;
+        foreach (var network in forwardedNetworks)
+        {
+            var parts = network.Split('/');
+            if (parts.Length == 2
+                && IPAddress.TryParse(parts[0], out var address)
+                && int.TryParse(parts[1], out var prefixLength)
+                && prefixLength is >= 0 and <= 128)
+            {
+                options.KnownIPNetworks.Add(new System.Net.IPNetwork(address, prefixLength));
+            }
+        }
+    });
+}
+
 var app = builder.Build();
 
-app.Services.EnsureCreated();
+app.Services.Migrate();
+
+if (forwardedNetworks is { Length: > 0 })
+{
+    app.UseForwardedHeaders();
+}
 
 app.UseGlobalExceptionHandler();
 
@@ -266,6 +324,14 @@ app.MapGet("/", () => Results.Ok(new
 {
     status = "healthy",
     environment = app.Environment.EnvironmentName,
+    timestamp = DateTime.UtcNow,
+})).WithMetadata(new ApiExplorerSettingsAttribute { IgnoreApi = true });
+
+// Lightweight liveness/readiness probe for load balancers and orchestrators.
+// Returns 200 once the app is up; no authentication or DB dependency.
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "healthy",
     timestamp = DateTime.UtcNow,
 })).WithMetadata(new ApiExplorerSettingsAttribute { IgnoreApi = true });
 

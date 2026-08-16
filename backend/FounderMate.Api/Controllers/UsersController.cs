@@ -90,10 +90,16 @@ public class UsersController : ControllerBase
     [HttpPatch("{id:int}")]
     [ProducesResponseType(typeof(UserResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [SwaggerOperation(Summary = "Update profile", Description = "Updates the authenticated user's profile (name, headline).")]
     public async Task<IActionResult> UpdateProfile([FromRoute][SwaggerParameter("User ID")] int id, [FromBody] UpdateProfileRequestDto request)
     {
+        if (!IsSelfOrAdmin(id))
+        {
+            return Forbid();
+        }
+
         _logger.LogInformation("Updating profile for user {UserId}", id);
         var user = await _userService.UpdateProfileAsync(id, request);
         if (user is null)
@@ -105,10 +111,16 @@ public class UsersController : ControllerBase
 
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [SwaggerOperation(Summary = "Delete user", Description = "Deletes a user account.")]
     public async Task<IActionResult> Delete([FromRoute][SwaggerParameter("User ID")] int id)
     {
+        if (!IsSelfOrAdmin(id))
+        {
+            return Forbid();
+        }
+
         _logger.LogInformation("Deleting user with ID {UserId}", id);
         var deleted = await _userService.DeleteAsync(id);
         if (!deleted)
@@ -135,11 +147,17 @@ public class UsersController : ControllerBase
 
     [HttpPost("{id:int}/change-password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [SwaggerOperation(Summary = "Change password", Description = "Changes the user's password. Requires current password.")]
     public async Task<IActionResult> ChangePassword([FromRoute][SwaggerParameter("User ID")] int id, [FromBody] ChangePasswordRequestDto request)
     {
+        if (!IsSelfOrAdmin(id))
+        {
+            return Forbid();
+        }
+
         _logger.LogInformation("Changing password for user {UserId}", id);
         var changed = await _userService.ChangePasswordAsync(id, request);
         if (!changed)
@@ -164,6 +182,28 @@ public class UsersController : ControllerBase
 
         _logger.LogInformation("Fetching current user with ID {UserId}", id);
         var user = await _userService.GetByIdAsync(id);
+        if (user is null)
+        {
+            return NotFound(new { message = "User not found." });
+        }
+        return Ok(user);
+    }
+
+    [HttpPatch("me")]
+    [ProducesResponseType(typeof(UserResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(Summary = "Update current user profile", Description = "Updates the authenticated user's own profile (name, headline). The user is identified from JWT claims.")]
+    public async Task<IActionResult> UpdateCurrentUser([FromBody] UpdateProfileRequestDto request)
+    {
+        var claimId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id);
+        if (!claimId)
+        {
+            return Unauthorized(new { message = "Missing user id claim." });
+        }
+
+        var user = await _userService.UpdateProfileAsync(id, request);
         if (user is null)
         {
             return NotFound(new { message = "User not found." });
@@ -219,5 +259,11 @@ public class UsersController : ControllerBase
             return BadRequest(new { message = "User is already an Admin." });
         }
         return Ok(new { message = "User promoted to Admin." });
+    }
+
+    private bool IsSelfOrAdmin(int targetId)
+    {
+        var currentUserId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
+        return currentUserId == targetId || User.IsInRole("Admin");
     }
 }

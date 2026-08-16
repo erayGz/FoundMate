@@ -11,7 +11,7 @@ interface ApplicationFormProps {
   profile: FoundmateProfile;
   values: ApplicationFormValues;
   onChange: (values: ApplicationFormValues) => void;
-  onSaveDraft: (values: ApplicationFormValues) => ProjectApplication;
+  onSaveDraft: (values: ApplicationFormValues) => Promise<ProjectApplication>;
   onReview: (values: ApplicationFormValues) => void;
   saveLabel?: string;
   saveMode?: "draft" | "submitted";
@@ -64,7 +64,7 @@ export function ApplicationForm({ project, profile, values, onChange, onSaveDraf
     onReview(cleaned);
   };
 
-  const save = () => {
+  const save = async () => {
     if (isSaving) return;
     if (resetSaveFeedbackRef.current) window.clearTimeout(resetSaveFeedbackRef.current);
 
@@ -79,18 +79,16 @@ export function ApplicationForm({ project, profile, values, onChange, onSaveDraf
     }
 
     setSaveFeedback({ status: "saving" });
-    window.requestAnimationFrame(() => {
-      try {
-        onChange(cleaned);
-        const savedApplication = onSaveDraft(cleaned);
-        setSaveFeedback({ status: "saved", savedAt: savedApplication.updatedAt });
-        resetSaveFeedbackRef.current = window.setTimeout(() => {
-          setSaveFeedback((current) => current.status === "saved" ? { status: "idle", savedAt: current.savedAt } : current);
-        }, 2600);
-      } catch {
-        setSaveFeedback({ status: "error" });
-      }
-    });
+    try {
+      onChange(cleaned);
+      const savedApplication = await onSaveDraft(cleaned);
+      setSaveFeedback({ status: "saved", savedAt: savedApplication.updatedAt ?? undefined });
+      resetSaveFeedbackRef.current = window.setTimeout(() => {
+        setSaveFeedback((current) => current.status === "saved" ? { status: "idle", savedAt: current.savedAt } : current);
+      }, 2600);
+    } catch {
+      setSaveFeedback({ status: "error" });
+    }
   };
 
   const saveButtonText = saveFeedback.status === "saving"

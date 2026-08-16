@@ -1,0 +1,19 @@
+# Railway service config for the static frontend (Vite build served by nginx).
+# Service root directory: /frontend   (Dockerfile path is relative to it).
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+watchPatterns = ["src/**", "index.html", "package.json", "package-lock.json", "vite.config.ts", "tsconfig.json"]
+
+# REQUIRED: set VITE_API_URL to the deployed API origin (the Railway HTTPS URL
+# of the api service) BEFORE building this service, e.g.
+#   buildArgs = { VITE_API_URL = "https://foundermate-api.up.railway.app" }
+# The Dockerfile fails the build if this is missing or empty.
+buildArgs = { VITE_API_URL = "" }
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

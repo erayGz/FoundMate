@@ -5,10 +5,14 @@ namespace FounderMate.Api.Helpers;
 
 public static class DatabaseInitializer
 {
-    public static void EnsureCreated(this IServiceProvider services)
+    /// <summary>
+    /// Applies pending EF Core migrations at startup so a fresh deployment
+    /// gets the same schema (and migration history) as `dotnet ef database update`.
+    /// </summary>
+    public static void Migrate(this IServiceProvider services)
     {
         using var scope = services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        dbContext.Database.EnsureCreated();
+        dbContext.Database.Migrate();
     }
 }

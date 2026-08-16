@@ -3,5 +3,6 @@ obj/
 *.db
 *.db-journal
 *.db-shm
+*.pid
 *.db-wal
 appsettings.Production.json

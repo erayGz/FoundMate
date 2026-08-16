@@ -142,6 +142,7 @@ public class ProjectsControllerTests
         // Arrange
         var request = new ProjectUpdateRequestDto { Title = "Updated Title" };
         var updatedProject = new ProjectResponseDto { Id = 1, Title = "Updated Title", OwnerId = _testUserId };
+        _mockProjectService.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(updatedProject);
         _mockProjectService.Setup(x => x.UpdateAsync(_testUserId, 1, request)).ReturnsAsync(updatedProject);
 
         // Act
@@ -156,7 +157,9 @@ public class ProjectsControllerTests
     public async Task Update_ByNonOwner_ShouldReturnForbid()
     {
         // Arrange
+        var project = new ProjectResponseDto { Id = 1, Title = "Test", OwnerId = _testUserId };
         var request = new ProjectUpdateRequestDto { Title = "Hacked" };
+        _mockProjectService.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(project);
         _mockProjectService.Setup(x => x.UpdateAsync(999, 1, request)).ReturnsAsync((ProjectResponseDto?)null);
 
         // Act - use a different user ID
@@ -173,9 +176,24 @@ public class ProjectsControllerTests
     }
 
     [Fact]
+    public async Task Update_WithNonExistentProject_ShouldReturnNotFound()
+    {
+        // Arrange
+        _mockProjectService.Setup(x => x.GetByIdAsync(999)).ReturnsAsync((ProjectResponseDto?)null);
+
+        // Act
+        var result = await _controller.Update(999, new ProjectUpdateRequestDto { Title = "Nope" });
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [Fact]
     public async Task Delete_ByOwner_ShouldReturnNoContent()
     {
         // Arrange
+        var project = new ProjectResponseDto { Id = 1, Title = "Test", OwnerId = _testUserId };
+        _mockProjectService.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(project);
         _mockProjectService.Setup(x => x.DeleteAsync(_testUserId, 1)).ReturnsAsync(true);
 
         // Act
@@ -189,8 +207,10 @@ public class ProjectsControllerTests
     public async Task Delete_ByNonOwner_ShouldReturnForbid()
     {
         // Arrange
+        var project = new ProjectResponseDto { Id = 1, Title = "Test", OwnerId = _testUserId };
+        _mockProjectService.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(project);
         _mockProjectService.Setup(x => x.DeleteAsync(999, 1)).ReturnsAsync(false);
-        
+
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
             new Claim(ClaimTypes.NameIdentifier, "999")
@@ -202,5 +222,18 @@ public class ProjectsControllerTests
 
         // Assert
         result.Should().BeOfType<ForbidResult>();
+    }
+
+    [Fact]
+    public async Task Delete_WithNonExistentProject_ShouldReturnNotFound()
+    {
+        // Arrange
+        _mockProjectService.Setup(x => x.GetByIdAsync(999)).ReturnsAsync((ProjectResponseDto?)null);
+
+        // Act
+        var result = await _controller.Delete(999);
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
     }
 }

@@ -31,7 +31,7 @@ public class UserService : IUserService
 
         if (existingUser)
         {
-            throw new InvalidOperationException("Email already registered.");
+            throw new ConflictException("Email already registered.");
         }
 
         var user = new User

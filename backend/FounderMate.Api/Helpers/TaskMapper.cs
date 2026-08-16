@@ -13,7 +13,7 @@ public static class TaskMapper
             Title = task.Title,
             Description = task.Description,
             Status = task.Status,
-            Priority = task.Priority,
+            Priority = task.Priority ?? "Medium",
             ProjectId = task.ProjectId,
             TeamId = task.TeamId,
             AssigneeId = task.AssigneeId,

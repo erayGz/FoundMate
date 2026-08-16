@@ -60,6 +60,24 @@ public class ProjectsController : ControllerBase
         return Ok(projects);
     }
 
+    [HttpGet("{id:int}/members")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(List<ProjectMemberResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(Summary = "Get project members", Description = "Returns the project's current members with minimal public user information.")]
+    public async Task<IActionResult> GetMembers(int id)
+    {
+        try
+        {
+            var members = await _projectService.GetMembersAsync(id);
+            return Ok(members);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
     [HttpGet("mine")]
     [ProducesResponseType(typeof(PaginatedResponse<ProjectResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -87,6 +105,12 @@ public class ProjectsController : ControllerBase
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
 
+        var existing = await _projectService.GetByIdAsync(id);
+        if (existing is null)
+        {
+            return NotFound();
+        }
+
         var project = await _projectService.UpdateAsync(userId, id, request);
         return project is not null ? Ok(project) : Forbid();
     }
@@ -100,6 +124,12 @@ public class ProjectsController : ControllerBase
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
+
+        var existing = await _projectService.GetByIdAsync(id);
+        if (existing is null)
+        {
+            return NotFound();
+        }
 
         var deleted = await _projectService.DeleteAsync(userId, id);
         return deleted ? NoContent() : Forbid();
