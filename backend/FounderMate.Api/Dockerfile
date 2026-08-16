@@ -18,18 +18,17 @@ USER appuser
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Copy project files
-COPY ["FounderMate.Api/FounderMate.Api.csproj", "FounderMate.Api/"]
-COPY ["FounderMate.Api.Tests/FounderMate.Api.Tests.csproj", "FounderMate.Api.Tests/"]
+# The Docker build context is the project root (/backend/FounderMate.Api),
+# so paths below are relative to this directory.
+COPY ["FounderMate.Api.csproj", "."]
 
 # Restore dependencies
-RUN dotnet restore "FounderMate.Api/FounderMate.Api.csproj"
+RUN dotnet restore "FounderMate.Api.csproj"
 
 # Copy source code
 COPY . .
 
 # Build
-WORKDIR "/src/FounderMate.Api"
 RUN dotnet build "FounderMate.Api.csproj" -c Release -o /app/build
 
 FROM build AS publish
